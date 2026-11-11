@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Healthy Choice Comparator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Chart Colors */
+            --chart-point-label-color: #334155;
+            --chart-tick-color: #64748b;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ebe5dc;
+            background-image: linear-gradient(135deg, #ebe5dc 0%, #d5cdbc 100%);
+        }
+        
+        /* --- Text Color Styling --- */
+        /* You can change all text colors for the app here */
+        body {
+            color: #645d3b; /* Default text color (gray-800) */
+        }
+        .header-subtitle, .previous-comparison-vs {
+            color: #394931; /* Subtitles and secondary text (gray-600) */
+        }
+        .main-title {
+            background-image: linear-gradient(to right, #44492b, #394931); /* Gradient for main title (green-500 to blue-600) */
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .product-title-a, .previous-comparison-a {
+            color: #4c3d19; 
+            font-weight: bold;
+        }
+        .product-title-b, .previous-comparison-b {
+            color: #4c3d19; 
+            font-weight: bold;
+        }
+        label {
+            color: #374151; /* Form labels (gray-700) */
+        }
+        .summary-success {
+            color: #045f27b9; /* Success message text (green-800) */
+            background-color: #dcfce7;
+        }
+        .summary-tie {
+            color: #854d0e; /* Tie message text (yellow-800) */
+            background-color: #fefce8;
+        }
+        .api-response-text {
+            color: #374151; /* AI generated text (gray-700) */
+        }
+        .api-warning-message {
+            color: #ea520c; /* API warning text (orange-600) */
+            font-weight: 500;
+        }
+        .api-error-message {
+            color: #ef4444; /* API error text (red-500) */
+            font-weight: 500;
+        }
+        /* --- End of Text Color Styling --- */
+
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #e0e0e0; }
+        ::-webkit-scrollbar-thumb { background: #a0a0a0; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #888; }
+        .flex.compare-btn{
+            background-color: #394931;
+        }
+
+        .product-card {
+            transition: all 0.3s ease-in-out;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 4px solid #354024;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .fade-in {
+            animation: fadeInAnimation 0.7s ease-in-out;
+        }
+        @keyframes fadeInAnimation {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        .animate-swoop-in-out {
+            animation: swoop-in 0.3s ease-out forwards, swoop-out 0.3s ease-in 2.7s forwards;
+        }
+        @keyframes swoop-in {
+            from { opacity: 0; transform: translateY(-20px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes swoop-out {
+            from { opacity: 1; transform: translateY(0) scale(1); }
+            to { opacity: 0; transform: translateY(-20px) scale(0.95); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+        <!-- Header Section -->
+        <header class="text-center mb-10">
+            <h1 class="main-title text-4xl md:text-6xl font-extrabold">
+                Healthy Choice Comparator
+            </h1>
+            <p class="header-subtitle mt-3 text-lg">Visually compare nutrition facts to make smarter food decisions.</p>
+        </header>
+
+        <main>
+            <!-- Input Section -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                <!-- Product A Card -->
+                <div id="product-a-card" class="product-card bg-white/60 p-6 rounded-2xl shadow-lg">
+                    <h2 class="product-title-a text-2xl font-bold mb-4 text-center flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                        Product A
+                    </h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="product-a-name" class="block text-sm font-medium mb-1">Product Name</label>
+                            <input type="text" id="product-a-name" class="w-full px-4 py-2 bg-white/80 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition" placeholder="e.g., Coca-Cola">
+                        </div>
+                        <div>
+                            <label for="product-a-calories" class="block text-sm font-medium mb-1">Calories (kcal)</label>
+                            <input type="number" id="product-a-calories" min="0" class="w-full px-4 py-2 bg-white/80 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition" placeholder="e.g., 140">
+                        </div>
+                        <div>
+                            <label for="product-a-sugar" class="block text-sm font-medium mb-1">Sugar (g)</label>
+                            <input type="number" id="product-a-sugar" min="0" class="w-full px-4 py-2 bg-white/80 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition" placeholder="e.g., 39">
+                        </div>
+                        <div>
+                            <label for="product-a-fat" class="block text-sm font-medium mb-1">Fat (g)</label>
+                            <input type="number" id="product-a-fat" min="0" class="w-full px-4 py-2 bg-white/80 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition" placeholder="e.g., 0">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product B Card -->
+                <div id="product-b-card" class="product-card bg-white/60 p-6 rounded-2xl shadow-lg">
+                     <h2 class="product-title-b text-2xl font-bold mb-4 text-center flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                        Product B
+                    </h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="product-b-name" class="block text-sm font-medium mb-1">Product Name</label>
+                            <input type="text" id="product-b-name" class="w-full px-4 py-2 bg-white/80 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 transition" placeholder="e.g., Orange Juice">
+                        </div>
+                        <div>
+                            <label for="product-b-calories" class="block text-sm font-medium mb-1">Calories (kcal)</label>
+                            <input type="number" id="product-b-calories" min="0" class="w-full px-4 py-2 bg-white/80 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 transition" placeholder="e.g., 110">
+                        </div>
+                        <div>
+                            <label for="product-b-sugar" class="block text-sm font-medium mb-1">Sugar (g)</label>
+                            <input type="number" id="product-b-sugar" min="0" class="w-full px-4 py-2 bg-white/80 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 transition" placeholder="e.g., 22">
+                        </div>
+                        <div>
+                            <label for="product-b-fat" class="block text-sm font-medium mb-1">Fat (g)</label>
+                            <input type="number" id="product-b-fat" min="0" class="w-full px-4 py-2 bg-white/80 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 transition" placeholder="e.g., 0">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex justify-center items-center space-x-4 mb-10">
+                <button id="compare-btn" class="px-8 py-3 bg-gradient-to-r from-#4c3d19 to-blue-600 text-white font-bold rounded-full shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition-all transform hover:scale-105 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                    Compare Now
+                </button>
+                <button id="reset-btn" class="px-8 py-3 bg-gray-600 text-white font-bold rounded-full shadow-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 transition-all transform hover:scale-105 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                    Reset
+                </button>
+            </div>
+            
+            <!-- Custom Message Box -->
+            <div id="message-box" class="hidden fixed top-5 right-5 bg-red-500 text-white py-2 px-4 rounded-lg shadow-lg">
+                <p id="message-text"></p>
+            </div>
+
+            <!-- Results Section -->
+            <div id="results-section" class="hidden">
+                <div class="bg-white/60 product-card p-6 rounded-2xl shadow-lg mb-8">
+                    <h2 class="text-3xl font-bold text-center mb-6">Comparison Results</h2>
+                    <div id="results-summary" class="text-center text-xl font-semibold mb-6 p-4 rounded-lg"></div>
+                    
+                    <!-- Comparison Chart -->
+                    <div class="w-full max-w-2xl mx-auto">
+                        <canvas id="comparisonChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Healthier Alternatives Section -->
+                <div class="bg-white/60 product-card p-6 rounded-2xl shadow-lg mb-8">
+                    <h2 class="text-3xl font-bold text-center mb-6">Healthier Alternatives</h2>
+                    <div id="alternatives-content" class="prose max-w-none prose-ul:list-disc prose-li:ml-4">
+                        <div id="alternatives-loader" class="flex justify-center items-center">
+                            <div class="loader"></div>
+                            <p class="ml-4">Finding healthier options for you...</p>
+                        </div>
+                        <div id="alternatives-text" class="api-response-text"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Personalized Diet Recommendations Section -->
+            <div class="bg-white/60 product-card p-6 rounded-2xl shadow-lg mt-8">
+                <h2 class="text-3xl font-bold text-center mb-6">Personalized Diet Recommendations</h2>
+                <div class="max-w-3xl mx-auto">
+                    <div class="mb-4">
+                        <label for="diet-requirements" class="block text-md font-medium mb-2">Describe your dietary needs & goals:</label>
+                        <textarea id="diet-requirements" rows="3" class="w-full px-4 py-2 bg-white/80 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="e.g., vegetarian, high-protein for muscle gain, low-carb, gluten-free..."></textarea>
+                    </div>
+                    <div class="text-center">
+                         <button id="get-diet-btn" class="px-8 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold rounded-full shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 transition-all transform hover:scale-105 flex items-center gap-2 mx-auto">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
+                            Get Recommendations
+                        </button>
+                    </div>
+                    <div id="diet-results-section" class="mt-6 hidden">
+                        <div id="diet-loader" class="flex justify-center items-center">
+                            <div class="loader"></div>
+                            <p class="ml-4">Crafting your personalized diet plan...</p>
+                        </div>
+                        <div id="diet-text" class="api-response-text prose max-w-none prose-ul:list-disc prose-li:ml-4"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Previous Comparisons Section -->
+            <div class="mt-12">
+                <h2 class="text-3xl font-bold text-center mb-6">Previous Comparisons</h2>
+                <div id="previous-comparisons" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Saved items will be injected here -->
+                    <p id="no-history" class="text-center col-span-full">No comparisons saved yet.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Element References ---
+            const productA = {
+                name: document.getElementById('product-a-name'),
+                calories: document.getElementById('product-a-calories'),
+                sugar: document.getElementById('product-a-sugar'),
+                fat: document.getElementById('product-a-fat'),
+            };
+            const productB = {
+                name: document.getElementById('product-b-name'),
+                calories: document.getElementById('product-b-calories'),
+                sugar: document.getElementById('product-b-sugar'),
+                fat: document.getElementById('product-b-fat'),
+            };
+
+            const compareBtn = document.getElementById('compare-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            const resultsSection = document.getElementById('results-section');
+            const resultsSummary = document.getElementById('results-summary');
+            
+            const messageBox = document.getElementById('message-box');
+            const messageText = document.getElementById('message-text');
+
+            const previousComparisonsContainer = document.getElementById('previous-comparisons');
+            const noHistoryMsg = document.getElementById('no-history');
+
+            const alternativesLoader = document.getElementById('alternatives-loader');
+            const alternativesText = document.getElementById('alternatives-text');
+            
+            const chartCanvas = document.getElementById('comparisonChart');
+            let comparisonChart = null;
+
+            // Diet Recommendation Elements
+            const dietRequirements = document.getElementById('diet-requirements');
+            const getDietBtn = document.getElementById('get-diet-btn');
+            const dietResultsSection = document.getElementById('diet-results-section');
+            const dietLoader = document.getElementById('diet-loader');
+            const dietText = document.getElementById('diet-text');
+
+
+            // --- Initial Setup ---
+            loadPreviousComparisons();
+
+            // --- Event Listeners ---
+            compareBtn.addEventListener('click', handleCompare);
+            resetBtn.addEventListener('click', resetForm);
+            previousComparisonsContainer.addEventListener('click', handleHistoryClick);
+            getDietBtn.addEventListener('click', fetchDietRecommendations);
+
+            // --- Functions ---
+            
+            function showMessage(message) {
+                messageText.textContent = message;
+                messageBox.classList.remove('hidden');
+                messageBox.classList.add('animate-swoop-in-out');
+                messageBox.onanimationend = () => {
+                    if (messageBox.classList.contains('animate-swoop-in-out')) {
+                        messageBox.classList.add('hidden');
+                        messageBox.classList.remove('animate-swoop-in-out');
+                    }
+                };
+            }
+
+            function handleCompare() {
+                if (!validateInputs()) {
+                    showMessage('Please fill in all fields with valid numbers.');
+                    return;
+                }
+                const dataA = getProductData(productA);
+                const dataB = getProductData(productB);
+                const comparison = compareProducts(dataA, dataB);
+                displayResults(comparison);
+                resultsSection.classList.remove('hidden');
+                resultsSection.classList.add('fade-in');
+                resultsSection.scrollIntoView({ behavior: 'smooth' });
+                saveComparison(dataA, dataB);
+                loadPreviousComparisons();
+                fetchAlternatives(dataA.name, dataB.name);
+            }
+
+            function validateInputs() {
+                const inputs = [
+                    productA.name, productA.calories, productA.sugar, productA.fat,
+                    productB.name, productB.calories, productB.sugar, productB.fat
+                ];
+                for (const input of inputs) {
+                    if (input.value.trim() === '') return false;
+                    if (input.type === 'number' && (isNaN(parseFloat(input.value)) || parseFloat(input.value) < 0)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            function getProductData(product) {
+                return {
+                    name: product.name.value.trim(),
+                    calories: parseFloat(product.calories.value),
+                    sugar: parseFloat(product.sugar.value),
+                    fat: parseFloat(product.fat.value)
+                };
+            }
+
+            function compareProducts(a, b) {
+                let scoreA = 0;
+                let scoreB = 0;
+                if (a.calories < b.calories) scoreA++;
+                if (b.calories < a.calories) scoreB++;
+                if (a.sugar < b.sugar) scoreA++;
+                if (b.sugar < a.sugar) scoreB++;
+                if (a.fat < b.fat) scoreA++;
+                if (b.fat < a.fat) scoreB++;
+
+                let overallWinner = 'tie';
+                if (scoreA > scoreB) overallWinner = 'a';
+                if (scoreB > scoreA) overallWinner = 'b';
+                
+                return { dataA: a, dataB: b, overallWinner };
+            }
+
+            function displayResults(comparison) {
+                const { dataA, dataB, overallWinner } = comparison;
+                
+                resultsSummary.className = 'text-center text-xl font-semibold mb-6 p-4 rounded-lg'; // Reset classes
+                if (overallWinner === 'a') {
+                    resultsSummary.innerHTML = `✅ Overall, <span class="font-bold">${dataA.name}</span> seems to be the healthier choice!`;
+                    resultsSummary.classList.add('summary-success');
+                } else if (overallWinner === 'b') {
+                    resultsSummary.innerHTML = `✅ Overall, <span class="font-bold">${dataB.name}</span> seems to be the healthier choice!`;
+                    resultsSummary.classList.add('summary-success');
+                } else {
+                    resultsSummary.innerHTML = `🤔 It's a tie! Both products have similar nutritional profiles.`;
+                    resultsSummary.classList.add('summary-tie');
+                }
+                
+                renderComparisonChart(dataA, dataB);
+            }
+
+            function renderComparisonChart(dataA, dataB) {
+                if (comparisonChart) {
+                    comparisonChart.destroy();
+                }
+                const maxCalories = Math.max(dataA.calories, dataB.calories, 1);
+                const maxSugar = Math.max(dataA.sugar, dataB.sugar, 1);
+                const maxFat = Math.max(dataA.fat, dataB.fat, 1);
+
+                const data = {
+                    labels: ['Calories', 'Sugar', 'Fat'],
+                    datasets: [
+                        {
+                            label: dataA.name,
+                            data: [(dataA.calories / maxCalories) * 100, (dataA.sugar / maxSugar) * 100, (dataA.fat / maxFat) * 100],
+                            backgroundColor: 'rgba(59, 130, 246, 0.2)', borderColor: 'rgba(59, 130, 246, 1)',
+                            pointBackgroundColor: 'rgba(59, 130, 246, 1)', pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff', pointHoverBorderColor: 'rgba(59, 130, 246, 1)', borderWidth: 2
+                        },
+                        {
+                            label: dataB.name,
+                            data: [(dataB.calories / maxCalories) * 100, (dataB.sugar / maxSugar) * 100, (dataB.fat / maxFat) * 100],
+                            backgroundColor: 'rgba(168, 85, 247, 0.2)', borderColor: 'rgba(168, 85, 247, 1)',
+                            pointBackgroundColor: 'rgba(168, 85, 247, 1)', pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff', pointHoverBorderColor: 'rgba(168, 85, 247, 1)', borderWidth: 2
+                        }
+                    ]
+                };
+                const options = {
+                    responsive: true, maintainAspectRatio: true,
+                    scales: { r: {
+                        angleLines: { display: true, color: 'rgba(0, 0, 0, 0.1)' },
+                        suggestedMin: 0, suggestedMax: 100,
+                        grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                        pointLabels: { font: { size: 14, weight: 'bold' }, color: getComputedStyle(document.documentElement).getPropertyValue('--chart-point-label-color') },
+                        ticks: { backdropColor: 'rgba(255, 255, 255, 0.75)', color: getComputedStyle(document.documentElement).getPropertyValue('--chart-tick-color') }
+                    }},
+                    plugins: { 
+                        legend: { 
+                            position: 'top', 
+                            labels: { 
+                                font: { size: 14, family: "'Inter', sans-serif" }
+                            }
+                        },
+                        tooltip: { 
+                            callbacks: { 
+                                label: function(context) {
+                                    const originalValue = context.dataset.label === dataA.name ? Object.values(dataA)[context.dataIndex + 1] : Object.values(dataB)[context.dataIndex + 1];
+                                    return `${context.dataset.label}: ${originalValue}`;
+                                }
+                            }
+                        }
+                    }
+                };
+                comparisonChart = new Chart(chartCanvas, { type: 'radar', data, options });
+            }
+
+            function resetForm() {
+                const inputs = [
+                    productA.name, productA.calories, productA.sugar, productA.fat,
+                    productB.name, productB.calories, productB.sugar, productB.fat
+                ];
+                inputs.forEach(input => input.value = '');
+                resultsSection.classList.add('hidden');
+                resultsSection.classList.remove('fade-in');
+                if (comparisonChart) {
+                    comparisonChart.destroy();
+                    comparisonChart = null;
+                }
+            }
+
+            function saveComparison(dataA, dataB) {
+                const comparisons = JSON.parse(localStorage.getItem('healthyChoiceComparisons')) || [];
+                const newComparison = { id: Date.now(), productA: dataA, productB: dataB };
+                comparisons.unshift(newComparison);
+                if (comparisons.length > 6) comparisons.pop();
+                localStorage.setItem('healthyChoiceComparisons', JSON.stringify(comparisons));
+            }
+            
+            function loadPreviousComparisons() {
+                const comparisons = JSON.parse(localStorage.getItem('healthyChoiceComparisons')) || [];
+                previousComparisonsContainer.innerHTML = ''; 
+                if (comparisons.length === 0) {
+                    previousComparisonsContainer.appendChild(noHistoryMsg);
+                    noHistoryMsg.classList.remove('hidden');
+                } else {
+                    noHistoryMsg.classList.add('hidden');
+                    comparisons.forEach(comp => {
+                        const card = document.createElement('div');
+                        card.className = 'bg-white/80 p-4 rounded-lg shadow-md border cursor-pointer hover:shadow-xl hover:border-green-500 transition-all transform hover:-translate-y-1';
+                        card.dataset.comparisonId = comp.id;
+                        card.innerHTML = `
+                            <h4 class="font-bold text-lg previous-comparison-a">${comp.productA.name}</h4>
+                            <p class="text-sm my-1 font-semibold previous-comparison-vs">vs</p>
+                            <h4 class="font-bold text-lg previous-comparison-b">${comp.productB.name}</h4>
+                        `;
+                        previousComparisonsContainer.appendChild(card);
+                    });
+                }
+            }
+
+            function handleHistoryClick(e) {
+                const card = e.target.closest('[data-comparison-id]');
+                if (!card) return;
+                const comparisonId = card.dataset.comparisonId;
+                const comparisons = JSON.parse(localStorage.getItem('healthyChoiceComparisons')) || [];
+                const comparisonToLoad = comparisons.find(c => c.id == comparisonId);
+                if (comparisonToLoad) {
+                    populateForm(comparisonToLoad);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            }
+
+            function populateForm(comparison) {
+                productA.name.value = comparison.productA.name;
+                productA.calories.value = comparison.productA.calories;
+                productA.sugar.value = comparison.productA.sugar;
+                productA.fat.value = comparison.productA.fat;
+                productB.name.value = comparison.productB.name;
+                productB.calories.value = comparison.productB.calories;
+                productB.sugar.value = comparison.productB.sugar;
+                productB.fat.value = comparison.productB.fat;
+            }
+            
+            async function fetchAlternatives(nameA, nameB) {
+                alternativesLoader.style.display = 'flex';
+                alternativesText.innerHTML = '';
+                const prompt = `I am comparing two food products: "${nameA}" and "${nameB}". Please suggest some generally healthier alternatives for these types of products. For example, if one is a sugary soda, suggest water or unsweetened tea. Keep the response concise, friendly, and formatted in simple HTML using paragraphs (<p>) and lists (<ul><li>).`;
+                await makeApiCall(prompt, alternativesText, alternativesLoader);
+            }
+
+            async function fetchDietRecommendations() {
+                const requirements = dietRequirements.value.trim();
+                if (requirements === '') {
+                    showMessage('Please describe your dietary needs first.');
+                    return;
+                }
+                dietResultsSection.classList.remove('hidden');
+                dietLoader.style.display = 'flex';
+                dietText.innerHTML = '';
+                
+                const prompt = `As a helpful nutrition assistant, suggest some general food ideas and examples based on the following user preferences: "${requirements}". This is for informational purposes only and not medical advice. Provide a friendly and actionable set of food examples. Format the response in simple HTML using paragraphs (<p>), lists (<ul><li>), and bold tags (<strong>) for emphasis.`;
+                await makeApiCall(prompt, dietText, dietLoader);
+            }
+
+            async function makeApiCall(prompt, textElement, loaderElement) {
+                let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+                const payload = { contents: chatHistory };
+                
+                const apiKey = "AIzaSyCvknTs8x70HgwoIV6k92Pdw4OgFoGXpxM"; // API Key will be handled by the environment
+
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+                let attempts = 0;
+                const maxAttempts = 5;
+                let success = false;
+                while (attempts < maxAttempts && !success) {
+                    try {
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+                        const result = await response.json();
+                        
+                        if (result.candidates && result.candidates.length > 0) {
+                            const candidate = result.candidates[0];
+                            if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
+                                textElement.innerHTML = candidate.content.parts[0].text;
+                                success = true;
+                            } else if (candidate.finishReason && candidate.finishReason !== "STOP") {
+                                let errorMessage = `The request could not be completed. Reason: ${candidate.finishReason}.`;
+                                if (candidate.finishReason === 'SAFETY') {
+                                    errorMessage += ' Please try rephrasing your request to be more general.';
+                                }
+                                textElement.innerHTML = `<p class="api-warning-message">${errorMessage}</p>`;
+                                success = true; // Stop retrying as we have a definitive reason.
+                            } else {
+                                throw new Error("API response was valid but empty. Retrying...");
+                            }
+                        } else if (result.promptFeedback && result.promptFeedback.blockReason) {
+                            const reason = result.promptFeedback.blockReason;
+                            textElement.innerHTML = `<p class="api-warning-message">Your request was blocked. Reason: ${reason}. Please try rephrasing your request.</p>`;
+                            success = true; // Stop retrying.
+                        } else {
+                           throw new Error("Invalid response structure from API. Retrying...");
+                        }
+                    } catch (error) {
+                        console.error(`Attempt ${attempts + 1} failed:`, error);
+                        attempts++;
+                        if (attempts < maxAttempts) {
+                            const delay = Math.pow(2, attempts) * 100;
+                            await new Promise(res => setTimeout(res, delay));
+                        } else {
+                            textElement.innerHTML = '<p class="api-error-message">Sorry, I couldn\'t fetch recommendations at this time. Please try again later.</p>';
+                        }
+                    } finally {
+                        if (success || attempts >= maxAttempts) {
+                            loaderElement.style.display = 'none';
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
